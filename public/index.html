@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Tarefas - P.I.</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f0f4f8;
+            color: #1e293b;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+            border: 1px solid #e2e8f0;
+        }
+
+        h2 {
+            color: #0f172a;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 14px 16px;
+            border: 2px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            outline: none;
+            color: #0f172a;
+        }
+
+        input[type="text"]:focus {
+            border-color: #1e3a8a;
+            box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.15);
+        }
+
+        button {
+            background-color: #1e3a8a;
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #172554;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        li {
+            background: #f8fafc;
+            margin-bottom: 10px;
+            padding: 14px 16px;
+            border-radius: 10px;
+            font-size: 15px;
+            color: #334155;
+            border-left: 4px solid #1e3a8a;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>Minhas Tarefas</h2>
+        <div class="subtitle">Projeto Integrador &bull; Firebase Cloud</div>
+
+        <div class="input-group">
+            <input type="text" id="taskInput" placeholder="Nova tarefa do projeto...">
+            <button onclick="adicionarTarefa()">Adicionar</button>
+        </div>
+
+        <ul id="taskList"></ul>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDh3Lr6VUZktQ93R8ZOdtsrC0gf3BEtmH0",
+            authDomain: "web-app-pi.firebaseapp.com",
+            projectId: "web-app-pi",
+            storageBucket: "web-app-pi.firebasestorage.app",
+            messagingSenderId: "880429714531",
+            appId: "1:880429714531:web:971ade3f02b215ea74fc56",
+            measurementId: "G-Q2PDW73SFR"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.adicionarTarefa = async () => {
+            const input = document.getElementById('taskInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            try {
+                await addDoc(collection(db, "tarefas"), {
+                    nome: text,
+                    criadoEm: new Date()
+                });
+                input.value = '';
+                carregarTarefas();
+            } catch (e) {
+                console.error("Erro ao salvar: ", e);
+            }
+        }
+
+        async function carregarTarefas() {
+            const lista = document.getElementById('taskList');
+            lista.innerHTML = '';
+
+            try {
+                const q = query(collection(db, "tarefas"), orderBy("criadoEm", "desc"));
+                const querySnapshot = await getDocs(q);
+
+                querySnapshot.forEach((doc) => {
+                    const li = document.createElement('li');
+                    li.textContent = doc.data().nome;
+                    lista.appendChild(li);
+                });
+            } catch (e) {
+                console.error("Erro ao carregar: ", e);
+            }
+        }
+
+        carregarTarefas();
+    </script>
+
+</body>
+
+</html>
