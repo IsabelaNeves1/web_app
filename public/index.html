@@ -2,9 +2,10 @@
 <html lang="pt-BR">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gerenciador de Tarefas - P.I.</title>
+
     <style>
         * {
             box-sizing: border-box;
@@ -96,6 +97,40 @@
             border-left: 4px solid #1e3a8a;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
             animation: fadeIn 0.3s ease;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            cursor: pointer;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .delete-btn {
+            background: #dc2626;
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+
+        .delete-btn:hover {
+            background: #991b1b;
+        }
+
+        .details {
+            margin-top: 20px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            padding: 16px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .details h3 {
+            margin-bottom: 10px;
+            color: #1e3a8a;
         }
 
         @keyframes fadeIn {
@@ -119,19 +154,37 @@
         <div class="subtitle">Projeto Integrador &bull; Firebase Cloud</div>
 
         <div class="input-group">
-            <input type="text" id="taskInput" placeholder="Nova tarefa do projeto...">
+            <input type="text" id="taskInput" placeholder="Nova tarefa do projeto..." />
             <button onclick="adicionarTarefa()">Adicionar</button>
         </div>
 
         <ul id="taskList"></ul>
+
+        <div class="details" id="taskDetails">
+            <h3>Detalhes da tarefa</h3>
+            <p id="taskInfo"></p>
+        </div>
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import {
+            initializeApp
+        } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+
+        import {
+            getFirestore,
+            collection,
+            addDoc,
+            getDocs,
+            query,
+            orderBy,
+            deleteDoc,
+            doc,
+            getDoc
+        } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyDh3Lr6VUZktQ93R8ZOdtsrC0gf3BEtmH0",
+            apiKey: "SUA_API_KEY",
             authDomain: "web-app-pi.firebaseapp.com",
             projectId: "web-app-pi",
             storageBucket: "web-app-pi.firebasestorage.app",
@@ -143,9 +196,11 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // ADICIONAR
         window.adicionarTarefa = async () => {
-            const input = document.getElementById('taskInput');
+            const input = document.getElementById("taskInput");
             const text = input.value.trim();
+
             if (!text) return;
 
             try {
@@ -153,28 +208,99 @@
                     nome: text,
                     criadoEm: new Date()
                 });
-                input.value = '';
-                carregarTarefas();
-            } catch (e) {
-                console.error("Erro ao salvar: ", e);
-            }
-        }
 
+                input.value = "";
+                carregarTarefas();
+
+            } catch (e) {
+                console.error("Erro ao salvar:", e);
+            }
+        };
+
+window.deletarTarefa = async (id) => {
+    try {
+
+        await deleteDoc(doc(db, "tarefas", id));
+
+        // FECHAR CARD DE DETALHES
+        document.getElementById("taskDetails").style.display = "none";
+
+        // LIMPAR TEXTO
+        document.getElementById("taskInfo").innerHTML = "";
+
+        carregarTarefas();
+
+    } catch (e) {
+        console.error("Erro ao deletar:", e);
+    }
+};
+
+        // GET BY ID
+        window.abrirTarefa = async (id) => {
+            try {
+                const docRef = doc(db, "tarefas", id);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+
+                    const tarefa = docSnap.data();
+
+                    document.getElementById("taskDetails").style.display = "block";
+
+                    document.getElementById("taskInfo").innerHTML = `
+                        <strong>ID:</strong> ${docSnap.id} <br><br>
+                        <strong>Nome:</strong> ${tarefa.nome}
+                    `;
+
+                } else {
+                    alert("Tarefa não encontrada.");
+                }
+
+            } catch (e) {
+                console.error("Erro ao buscar tarefa:", e);
+            }
+        };
+
+        // LISTAR
         async function carregarTarefas() {
-            const lista = document.getElementById('taskList');
-            lista.innerHTML = '';
+
+            const lista = document.getElementById("taskList");
+
+            lista.innerHTML = "";
 
             try {
-                const q = query(collection(db, "tarefas"), orderBy("criadoEm", "desc"));
+
+                const q = query(
+                    collection(db, "tarefas"),
+                    orderBy("criadoEm", "desc")
+                );
+
                 const querySnapshot = await getDocs(q);
 
-                querySnapshot.forEach((doc) => {
-                    const li = document.createElement('li');
-                    li.textContent = doc.data().nome;
+                querySnapshot.forEach((item) => {
+
+                    const tarefa = item.data();
+
+                    const li = document.createElement("li");
+
+                    li.innerHTML = `
+                        <div class="task-content" onclick="abrirTarefa('${item.id}')">
+                            ${tarefa.nome}
+                        </div>
+
+                        <button 
+                            class="delete-btn"
+                            onclick="event.stopPropagation(); deletarTarefa('${item.id}')"
+                        >
+                            Excluir
+                        </button>
+                    `;
+
                     lista.appendChild(li);
                 });
+
             } catch (e) {
-                console.error("Erro ao carregar: ", e);
+                console.error("Erro ao carregar:", e);
             }
         }
 
