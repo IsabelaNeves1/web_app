@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "web-app-pi"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }
